@@ -1,15 +1,74 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
-generator client {
-  provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
-}
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+// generator dto {
+//   provider = "prisma-nestjs-graphql"
+//   output = "./generated"
+// }
+
+model User {
+  id           BigInt      @id @default(autoincrement()) @map("id_user")
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  firstName    String      @map("name")
+  lastName     String      @map("surname")
+  email        String      @unique @map("mail")
+  password     String
+  role         String
+  associations UserInvoice[]
+  taxProfile   TaxProfile?
+}
+
+
+model TaxProfile {
+  id           BigInt     @id @default(autoincrement()) @map("id_tax_profile")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  userId       BigInt     @unique @map("id_user")
+  user         User       @relation(fields: [userId], references: [id])
+  invoices     Invoice[]
+  taxType      String     @map("tax_type")
+  isFlatRate   Boolean    @default(false) @map("is_flat_rate")
+}
+
+
+model Invoice {
+  id           BigInt     @id @default(autoincrement()) @map("id_invoice")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  invoiceNumber BigInt    @unique @map("invoice_number")
+  amount       Float
+  dueDate      DateTime   @map("due_date")
+  title        String
+  docDate      DateTime   @map("date")
+  docType      String     @map("type")
+  data         Bytes?
+  isPaid       Boolean    @default(false) @map("is_paid")
+  isCancelled  Boolean    @default(false) @map("is_cancelled")
+  taxProfileId BigInt     @map("id_tax_profile")
+  taxProfile   TaxProfile @relation(fields: [taxProfileId], references: [id])
+  associations UserInvoice[]
+}
+
+
+model UserInvoice {
+  id           BigInt   @id @default(autoincrement()) @map("id_user_invoice")
+  userId       BigInt   @map("id_user")
+  invoiceId    BigInt   @map("id_invoice")
+  dateLinked   DateTime @default(now()) @map("date_link")
+  firstView    DateTime? @map("first_view")
+  lastView     DateTime? @map("last_view")
+
+  user         User     @relation(fields: [userId], references: [id])
+  invoice      Invoice  @relation(fields: [invoiceId], references: [id])
+
+  @@unique([userId, invoiceId], name: "user_invoice_unique_id")
+  @@map("user_invoice")
 }

@@ -8,6 +8,8 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
+      # added this line to specify the correct database URL
+      - DATABASE_URL=postgresql://user:password@db:5432/invoice_management?schema=public
     depends_on:
       - db
 
@@ -19,6 +21,8 @@ services:
       POSTGRES_DB: invoice_management
     volumes:
       - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
   nginx:
     image: nginx:alpine
