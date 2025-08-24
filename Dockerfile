@@ -9,6 +9,7 @@ RUN npm install
 
 COPY . .
 
+RUN npm run tsoa:build
 
 RUN npm run build
 

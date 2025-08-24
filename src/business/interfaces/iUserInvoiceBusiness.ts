@@ -1,4 +1,8 @@
-import { UserInvoiceDto } from "../../shared/dto/userInvoiceDTO";
+import { UserInvoiceReadDto } from "../../shared/dto/userInvoiceReadDTO";
+import { UserInvoiceInsertDto } from "../../shared/dto/userInvoiceInsertDTO";
+import { UserInvoiceUpdateDto } from "../../shared/dto/userInvoiceUpdateDTO";
+import { UserInvoiceFilterDto } from "../../shared/dto/userInvoiceFilterDTO";
+import { PaginationDto } from "../../shared/dto/paginationDTO";
 
 /**
  * Business interface for the UserInvoice entity.
@@ -6,12 +10,17 @@ import { UserInvoiceDto } from "../../shared/dto/userInvoiceDTO";
  * using DTO.
  */
 export interface IUserInvoiceBusiness {
-  /*return all UserInvoiceDto as array*/
-  findAll(): Promise<UserInvoiceDto[]>;
-  /*return UserInvoiceDto from ID*/
-  findById(id: bigint): Promise<UserInvoiceDto | null>;
-  /*create UserInvoiceDto*/
-  create(data: Omit<UserInvoiceDto, 'id' | 'dateLinked'>): Promise<UserInvoiceDto>;
-  /*update UserInvoiceDto*/
-  update(id: bigint, data: Partial<Omit<UserInvoiceDto, 'id' | 'dateLinked'>>): Promise<UserInvoiceDto>;
+  /*return all UserInvoiceReadDto as array*/
+  /**
+ * @deprecated Use findAllFilter instead
+ */
+  findAll(): Promise<UserInvoiceReadDto[]>;
+  /*return paginated UserInvoiceReadDto array with filter*/
+  findAllFilter(filter?: Partial<UserInvoiceFilterDto>, page?: number, pageSize?: number): Promise<PaginationDto<UserInvoiceReadDto>>;
+  /*return UserInvoiceReadDto from ID*/
+  findById(id: bigint): Promise<UserInvoiceReadDto | null>;
+  /*create UserInvoiceCreateDto*/
+  create(data: UserInvoiceInsertDto): Promise<UserInvoiceReadDto>;
+  /*update UserInvoiceUpdateDto*/
+  update(data: UserInvoiceUpdateDto ): Promise<UserInvoiceReadDto>;
 }

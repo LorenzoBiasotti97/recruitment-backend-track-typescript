@@ -1,0 +1,14 @@
+{
+  "entryFile": "src/server.ts",
+  "noImplicitAdditionalProperties": "throw-on-extras",
+  "controllerPathGlobs": ["src/servlet/*.ts"],
+  "spec": {
+    "outputDirectory": "dist",
+    "specVersion": 3,
+    "securityDefinitions": {},
+    "specFileBaseName": "swagger"
+  },
+  "routes": {
+    "routesDir": "src/routes"
+  }
+}

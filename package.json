@@ -20,8 +20,11 @@
     "@types/express": "^5.0.3",
     "@types/node": "^24.1.0",
     "bcrypt": "^6.0.0",
+    "body-parser": "^2.2.0",
     "class-transformer": "^0.5.1",
     "express": "^5.1.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "typescript": "^5.9.2"
   },
   "devDependencies": {
@@ -29,12 +32,17 @@
     "nodemon": "^3.1.10",
     "prisma": "^6.14.0",
     "ts-node": "^10.9.2",
-    "ts-node-dev": "^2.0.0"
+    "ts-node-dev": "^2.0.0",
+    "tsoa": "^6.6.0"
   },
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpileOnly src/server.ts",
+    "dev": "npm run tsoa:build && ts-node-dev --respawn --transpileOnly src/server.ts",
     "build": "tsc",
     "db:seed": "ts-node src/seed.ts",
-    "db:seeddto": "ts-node src/seedDTO.ts"
+    "tsoa:spec": "tsoa spec",
+    "tsoa:routes": "tsoa routes",
+    "tsoa:build": "npm run tsoa:spec && npm run tsoa:routes",
+    "start": "ts-node src/server.ts"
   }
 }
+

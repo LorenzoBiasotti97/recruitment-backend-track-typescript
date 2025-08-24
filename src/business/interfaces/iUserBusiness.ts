@@ -1,4 +1,8 @@
-import { UserDto } from "../../shared/dto/userDTO";
+import { UserReadDto } from "../../shared/dto/userReadDTO";
+import { UserInsertDto } from "../../shared/dto/userInsertDTO";
+import { UserUpdateDto } from "../../shared/dto/userUpdateDTO";
+import { UserFilterDto } from "../../shared/dto/userFilterDTO";
+import { PaginationDto } from "../../shared/dto/paginationDTO";
 
 
 /**
@@ -7,12 +11,17 @@ import { UserDto } from "../../shared/dto/userDTO";
  * using DTO
  */
 export interface IUserBusiness {
-  /*return all UserDto as array*/
-  findAll(): Promise<UserDto[]>;
-  /*return UserDto from ID*/
-  findById(id: bigint): Promise<UserDto | null>;
-  /*create UserDto*/
-  create(data: Omit<UserDto, 'id' | 'createdAt' | 'updatedAt' | 'role'>): Promise<UserDto>;
-  /*update UserDto*/
-  update(id: bigint, data: Partial<Omit<UserDto, 'id' | 'createdAt' | 'updatedAt'>>): Promise<UserDto>;
+  /*return all UserReadDto as array*/
+  /**
+ * @deprecated Use findAllFilter instead
+ */
+  findAll(): Promise<UserReadDto[]>;
+  /*return paginated UserReadDto array with filter*/
+  findAllFilter(filter?: Partial<UserFilterDto>, page?: number, pageSize?: number): Promise<PaginationDto<UserReadDto>>;
+  /*return UserReadDto from ID*/
+  findById(id: bigint): Promise<UserReadDto | null>;
+  /*create UserInsertDto*/
+  create(data: UserInsertDto): Promise<UserReadDto>;
+  /*update UserUpdateDto*/
+  update(data: UserUpdateDto): Promise<UserReadDto>;
 }

@@ -21,7 +21,7 @@ yarn-error.log*
 .env.*.local
 
 # IDEs and Editors
-.vscode/
+#.vscode/
 .idea/
 
 # Docker related
@@ -45,5 +45,3 @@ coverage/
 # OS generated files
 .DS_Store
 Thumbs.db
-
-/src/generated/prisma

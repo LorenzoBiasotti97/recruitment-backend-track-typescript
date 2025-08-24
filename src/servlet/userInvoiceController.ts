@@ -1,85 +1,93 @@
-import { Request, Response } from "express";
+import { Controller, Route, Tags, Get, Post, Put, Delete, Path, Body, SuccessResponse, Query, Response } from "tsoa";
 import { UserInvoiceBusiness } from "../business/userInvoiceBusiness";
 import { PrismaUserInvoiceRepository } from "../repository/prismaUserRepository";
+import { UserInvoiceReadDto } from "../shared/dto/userInvoiceReadDTO";
+import { UserInvoiceInsertDto } from "../shared/dto/userInvoiceInsertDTO";
+import { UserInvoiceUpdateDto } from "../shared/dto/userInvoiceUpdateDTO";
+import { UserInvoiceFilterDto } from "../shared/dto/userInvoiceFilterDTO";
+import { PaginationDto } from "../shared/dto/paginationDTO";
 
-const userInvoiceService = new UserInvoiceBusiness(new PrismaUserInvoiceRepository());
-//TODO: transform BigInt properties to string for JSON serialization
-export class UserInvoiceController {
+const userInvoiceBusiness = new UserInvoiceBusiness(new PrismaUserInvoiceRepository());
 
+@Route("user-invoices")
+@Tags("User-Invoice Associations")
+export class UserInvoiceController extends Controller {
+  
   /**
-   * Handles GET requests to retrieve all user-invoice associations.
-   * @param req The Express request object.
-   * @param res The Express response object.
+   * @deprecated Use findAllFilter instead
    */
-  static async findAll(req: Request, res: Response) {
+  @Get("/")
+  @SuccessResponse("200", "List of user-invoice associations")
+  @Response<Error>(500, "Internal Server Error")
+  public async findAll() {
+    const userInvoices = await userInvoiceBusiness.findAll();
+    return userInvoices.map(userInvoice => ({
+      ...userInvoice,
+      id: userInvoice.id.toString(),
+      userId: userInvoice.userId.toString(),
+      invoiceId: userInvoice.invoiceId.toString(),
+    }));
+  }
+
+  @Post("/userInvoice-filter")
+  @SuccessResponse("200", "List of user-invoice associations")
+  @Response<Error>(500, "Internal Server Error")
+  public async findAllFilter(
+    @Body() user?: UserInvoiceFilterDto,
+    @Query() page: number = 1,
+    @Query() pageSize: number = 10
+  ): Promise<PaginationDto<UserInvoiceReadDto>> {
     try {
-      const userInvoices = await userInvoiceService.findAll();
-      res.json(userInvoices);
+      const result = await userInvoiceBusiness.findAllFilter(user, page, pageSize);
+
+      return result;
     } catch (e: any) {
-      res.status(500).json({ error: e.message });
+      this.setStatus(500);
+      return { data: [], pagination: { page, pageSize, total: 0, totalPages: 0 }, error: e.message };
     }
   }
 
-  /**
-   * Handles GET requests to retrieve a single user-invoice association by ID.
-   * @param req The Express request object.
-   * @param res The Express response object.
-   */
-  static async findById(req: Request, res: Response) {
-    try {
-      const id = BigInt(req.params.id);
-      const userInvoice = await userInvoiceService.findById(id);
-      if (userInvoice) {
-        res.json(userInvoice);
-      } else {
-        res.status(404).json({ error: `UserInvoice with id ${id} not found` });
-      }
-    } catch (e: any) {
-      res.status(500).json({ error: e.message });
-    }
+  @Post("/")
+  @SuccessResponse("201", "Created")
+  @Response<Error>(500, "Internal Server Error")
+  public async create(@Body() body: UserInvoiceInsertDto) {  
+    const newUserInvoice = await userInvoiceBusiness.create(body);
+    return newUserInvoice;
   }
 
-  /**
-   * Handles POST requests to create a new user-invoice association.
-   * @param req The Express request object, with association data in the body.
-   * @param res The Express response object.
-   */
-  static async create(req: Request, res: Response) {
-    try {
-      const newUserInvoice = await userInvoiceService.create(req.body);
-      res.status(201).json(newUserInvoice);
-    } catch (e: any) {
-      res.status(500).json({ error: e.message });
+  @Get("{id}")
+  @SuccessResponse("200", "User-Invoice association")
+  @Response<Error>(404, "User-Invoice association not found")
+  @Response<Error>(500, "Internal Server Error")
+  public async findById(@Path() id: string) {
+    const userInvoice = await userInvoiceBusiness.findById(BigInt(id));
+    if (!userInvoice) {
+      this.setStatus(404);
+      return { error: `UserInvoice with id ${id} not found` };
     }
+    return {
+      ...userInvoice,
+      id: userInvoice.id.toString(),
+      userId: userInvoice.userId.toString(),
+      invoiceId: userInvoice.invoiceId.toString(),
+    };
   }
 
-  /**
-   * Handles DELETE requests to delete a user-invoice association by ID.
-   * @param req The Express request object.
-   * @param res The Express response object.
-   */
-  static async delete(req: Request, res: Response) {
-    try {
-      const id = BigInt(req.params.id);
-      await userInvoiceService.delete(id);
-      res.status(204).send(); // No Content response on successful deletion
-    } catch (e: any) {
-      res.status(500).json({ error: e.message });
-    }
+  @Put("{id}")
+  @SuccessResponse("200", "User-Invoice association updated")
+  @Response<Error>(404, "User-Invoice association not found")
+  @Response<Error>(500, "Internal Server Error")
+  public async update(@Body() body: UserInvoiceUpdateDto) { 
+    const updatedUserInvoice = await userInvoiceBusiness.update(body);
+    return updatedUserInvoice;
   }
 
-  /**
-   * Handles PUT requests to update a user-invoice association by ID.
-   * @param req The Express request object, with association data in the body.
-   * @param res The Express response object.
-   */
-  static async update(req: Request, res: Response) {
-    try {
-      const id = BigInt(req.params.id);
-      const updatedUserInvoice = await userInvoiceService.update(id, req.body);
-      res.json(updatedUserInvoice);
-    } catch (e: any) {
-      res.status(500).json({ error: e.message });
-    }
+  @Delete("{id}")
+  @SuccessResponse("204", "User-Invoice association deleted")
+  @Response<Error>(500, "Internal Server Error")
+  public async delete(@Path() id: string) {
+    await userInvoiceBusiness.delete(BigInt(id));
+    this.setStatus(204);
+    return;
   }
 }

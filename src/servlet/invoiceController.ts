@@ -1,85 +1,122 @@
-import { Request, Response } from "express";
+import { Controller, Route, Tags, Get, Post, Put, Delete, Path, Body, Response, SuccessResponse, Query } from "tsoa";
 import { InvoiceBusiness } from "../business/invoiceBusiness";
 import { PrismaInvoiceRepository } from "../repository/prismaUserRepository";
+import { InvoiceReadDto } from "../shared/dto/invoiceReadDTO";
+import { InvoiceInsertDto } from "../shared/dto/invoiceInsertDTO";
+import { InvoiceUpdateDto } from "../shared/dto/invoiceUpdateDTO";
+import { PaginationDto } from "../shared/dto/paginationDTO";
+import { InvoiceReadFilterDto } from "../shared/dto/invoiceFilterDTO";
 
-const invoiceService = new InvoiceBusiness(new PrismaInvoiceRepository());
-//TODO: transform BigInt properties to string for JSON serialization
-export class InvoiceController {
+const invoiceBusiness = new InvoiceBusiness(new PrismaInvoiceRepository());
+
+@Route("invoices")
+@Tags("Invoices")
+export class InvoiceController extends Controller {
 
   /**
-   * Handles GET requests to retrieve all invoices.
-   * @param req The Express request object.
-   * @param res The Express response object.
+   * @deprecated Use findAllFilter instead
    */
-  static async findAll(req: Request, res: Response) {
+    
+  @Get()
+  @SuccessResponse("200", "List of invoices")
+  @Response<Error>(500, "Internal Server Error")
+  public async findAll(): Promise<Array<Omit<InvoiceReadDto, 'id' | 'invoiceNumber' | 'taxProfileId'> & { id: string; invoiceNumber: string; taxProfileId: string }>> {
     try {
-      const invoices = await invoiceService.findAll();
-      res.json(invoices);
+      const invoices = await invoiceBusiness.findAll();
+      return invoices.map(invoice => ({
+        ...invoice,
+        id: invoice.id.toString(),
+        invoiceNumber: invoice.invoiceNumber.toString(),
+        taxProfileId: invoice.taxProfileId.toString(),
+      }));
     } catch (e: any) {
-      res.status(500).json({ error: e.message });
+      this.setStatus(500);
+      throw e;
     }
   }
 
-  /**
-   * Handles GET requests to retrieve a single invoice by ID.
-   * @param req The Express request object.
-   * @param res The Express response object.
-   */
-  static async findById(req: Request, res: Response) {
+  @Post("/invoice-filter")
+  @SuccessResponse("200", "List of invoices")
+  @Response<Error>(500, "Internal Server Error")
+  async findAllFilter(
+    @Body() invoice?: Partial<InvoiceReadFilterDto>,
+    @Query() page: number = 1,
+    @Query() pageSize: number = 10
+  ) : Promise<PaginationDto<InvoiceReadDto>> {
     try {
-      const id = BigInt(req.params.id);
-      const invoice = await invoiceService.findById(id);
-      if (invoice) {
-        res.json(invoice);
-      } else {
-        res.status(404).json({ error: `Invoice with id ${id} not found` });
+      const result = await invoiceBusiness.findAllFilter(invoice, page, pageSize);
+      return result;
+    } catch (e: any) {
+      this.setStatus(500);
+      return { data: [], pagination: { page, pageSize, total: 0, totalPages: 0 }, error: e.message };
+    }
+  } 
+
+
+  @Post()
+  @SuccessResponse("201", "Created invoice")
+  @Response<Error>(500, "Internal Server Error")
+  public async create(@Body() body: InvoiceInsertDto): Promise<InvoiceReadDto> {
+    try {
+      const newInvoice = await invoiceBusiness.create(body);
+      this.setStatus(201);
+      return newInvoice;
+    } catch (e: any) {
+      this.setStatus(500);
+      throw e;
+    }
+  }
+
+  @Get("{id}")
+  @SuccessResponse("200", "Invoice")
+  @Response<Error>(404, "Invoice not found")
+  @Response<Error>(500, "Internal Server Error")
+  public async findById(@Path() id: string): Promise<Omit<InvoiceReadDto, 'id' | 'invoiceNumber' | 'taxProfileId'> & { id: string; invoiceNumber: string; taxProfileId: string }> {
+    try {
+      const bigIntId = BigInt(id);
+      const invoice = await invoiceBusiness.findById(bigIntId);
+      if (!invoice) {
+        this.setStatus(404);
+        throw new Error("Invoice not found");
       }
+      return {
+        ...invoice,
+        id: invoice.id.toString(),
+        invoiceNumber: invoice.invoiceNumber.toString(),
+        taxProfileId: invoice.taxProfileId.toString(),
+      };
     } catch (e: any) {
-      res.status(500).json({ error: e.message });
+      if (this.getStatus() === 404) throw e;
+      this.setStatus(500);
+      throw e;
     }
   }
 
-  /**
-   * Handles POST requests to create a new invoice.
-   * @param req The Express request object, with invoice data in the body.
-   * @param res The Express response object.
-   */
-  static async create(req: Request, res: Response) {
+  @Put("{id}")
+  @SuccessResponse("200", "Invoice updated")
+  @Response<Error>(404, "Invoice not found")
+  @Response<Error>(500, "Internal Server Error")
+  public async update(@Body() body: InvoiceUpdateDto ): Promise <InvoiceReadDto> {
     try {
-      const newInvoice = await invoiceService.create(req.body);
-      res.status(201).json(newInvoice);
+      const updatedInvoice = await invoiceBusiness.update(body);
+      return updatedInvoice
     } catch (e: any) {
-      res.status(500).json({ error: e.message });
+      this.setStatus(500);
+      throw e;
     }
   }
 
-  /**
-   * Handles DELETE requests to delete an invoice by ID.
-   * @param req The Express request object.
-   * @param res The Express response object.
-   */
-  static async delete(req: Request, res: Response) {
+  @Delete("{id}")
+  @SuccessResponse("204", "Invoice deleted")
+  @Response<Error>(500, "Internal Server Error")
+  public async delete(@Path() id: string): Promise<void> {
     try {
-      const id = BigInt(req.params.id);
-      await invoiceService.delete(id);
-      res.status(204).send(); // No Content response on successful deletion
+      const bigIntId = BigInt(id);
+      await invoiceBusiness.delete(bigIntId);
+      this.setStatus(204);
     } catch (e: any) {
-      res.status(500).json({ error: e.message });
-    }
-  }
-
-  /**
-   * Handles PUT requests to update an invoice by ID.
-   * @param req The Express request object, with invoice data in the body.
-   * @param res The Express response object.
-   */
-  static async update(req: Request, res: Response) {
-    try {
-      const id = BigInt(req.params.id);
-      const updatedInvoice = await invoiceService.update(id, req.body);
-      res.json(updatedInvoice);
-    } catch (e: any) {
-      res.status(500).json({ error: e.message });
+      this.setStatus(500);
+      throw e;
     }
   }
 }
