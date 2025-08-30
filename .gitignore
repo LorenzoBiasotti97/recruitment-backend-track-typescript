@@ -27,10 +27,6 @@ yarn-error.log*
 .docker/
 docker-compose.override.yml
 
-# NPM / Yarn package-lock / lockfile
-package-lock.json
-yarn.lock
-
 # TypeScript related
 #tsconfig.json
 #tsconfig.tsbuildinfo

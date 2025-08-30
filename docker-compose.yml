@@ -1,8 +1,6 @@
 services:
   backend:
     build: .
-    volumes:
-      - .:/app
     ports:
       - "3000:3000"
     environment:
